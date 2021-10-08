@@ -40,8 +40,8 @@ func main() {
 
 	var opts struct {
 		Positional struct {
-			ServerConnectionString string `description:"Connectionstring sf/udp@HOST:PORT" default:"sf@0.0.0.0:9002"`
-			ClientConnectionString string `description:"Connectionstring sf@HOST:PORT or serial@PORT:BAUD" default:"serial@/dev/ttyUSB0:115200"`
+			Server string   `description:"Connectionstring sf/udp@HOST:PORT" default:"sf@0.0.0.0:9002"`
+			Source []string `description:"Connectionstring sf@HOST:PORT or serial@PORT:BAUD" default:"serial@/dev/ttyUSB0:115200"`
 		} `positional-args:"yes"`
 
 		Reconnect uint `long:"reconnect" default:"10" description:"Reconnect period, seconds"`
@@ -77,23 +77,30 @@ func main() {
 		}
 		os.Exit(0)
 	}
-
+	for i, sauce := range opts.Positional.Source {
+		fmt.Printf("Got argument source: %d %s\n", i, sauce)
+	}
 	// Applying both would effectively swap the ends, which makes no sense
 	if opts.ClientClient && opts.ServerServer {
 		fmt.Printf("ERROR: client-client, server-server or neither of them, NOT both!\n")
 		os.Exit(1)
 	}
 
-	sconn, scs, err := moteconnection.CreateConnection(opts.Positional.ServerConnectionString)
+	sconn, scs, err := moteconnection.CreateConnection(opts.Positional.Server)
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
 		os.Exit(1)
 	}
+	ccons := make([]moteconnection.MoteConnection, len(opts.Positional.Source))
+	ccstrings := make([]string, len(opts.Positional.Source))
+	for i, sauce := range opts.Positional.Source {
 
-	cconn, ccs, err := moteconnection.CreateConnection(opts.Positional.ClientConnectionString)
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
-		os.Exit(1)
+		var err2 error
+		ccons[i], ccstrings[i], err2 = moteconnection.CreateConnection(sauce)
+		if err2 != nil {
+			fmt.Printf("ERROR: %s\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Configure logging
@@ -106,23 +113,32 @@ func main() {
 		logger = log.New(os.Stdout, "INFO:  ", logformat)
 		sconn.SetDebugLogger(log.New(os.Stdout, "DEBUG: ", logformat))
 		sconn.SetInfoLogger(logger)
-		cconn.SetDebugLogger(log.New(os.Stdout, "DEBUG: ", logformat))
-		cconn.SetInfoLogger(logger)
+		for i := range opts.Positional.Source {
+
+			var debugstring = fmt.Sprintf("DEBUG%d: ", i)
+			ccons[i].SetDebugLogger(log.New(os.Stdout, debugstring, logformat))
+			ccons[i].SetInfoLogger(logger)
+		}
 	} else {
 		logger = log.New(os.Stdout, "", logformat)
 	}
 	sconn.SetWarningLogger(log.New(os.Stdout, "WARN:  ", logformat))
 	sconn.SetErrorLogger(log.New(os.Stdout, "ERROR: ", logformat))
-	cconn.SetWarningLogger(log.New(os.Stdout, "WARN:  ", logformat))
-	cconn.SetErrorLogger(log.New(os.Stdout, "ERROR: ", logformat))
-
+	for i := range opts.Positional.Source {
+		var warningstring = fmt.Sprintf("WARN%d: ", i)
+		var errorstring = fmt.Sprintf("ERROR%d: ", i)
+		ccons[i].SetWarningLogger(log.New(os.Stdout, warningstring, logformat))
+		ccons[i].SetErrorLogger(log.New(os.Stdout, errorstring, logformat))
+	}
 	// Set up dispatchers for all possible dispatch IDs on both ends
 	var cdsps []moteconnection.Dispatcher
 	creceive := make(chan moteconnection.Packet)
 	for i := 0; i <= 255; i++ {
 		dsp := moteconnection.NewPacketDispatcher(moteconnection.NewRawPacket(byte(i)))
 		dsp.RegisterReceiver(creceive)
-		cconn.AddDispatcher(dsp)
+		for i := range opts.Positional.Source {
+			ccons[i].AddDispatcher(dsp)
+		}
 		cdsps = append(cdsps, dsp)
 	}
 
@@ -144,11 +160,15 @@ func main() {
 		sconn.Listen()
 	}
 	if opts.ServerServer {
-		logger.Printf("Listening on %s\n", ccs)
-		cconn.Listen()
+		for i := range opts.Positional.Source {
+			logger.Printf("Listening on %s\n", ccstrings[i])
+			ccons[i].Listen()
+		}
 	} else {
-		logger.Printf("Connecting to %s\n", ccs)
-		cconn.Autoconnect(time.Duration(opts.Reconnect) * time.Second)
+		for i := range opts.Positional.Source {
+			logger.Printf("Connecting to %s\n", ccstrings[i])
+			ccons[i].Autoconnect(time.Duration(opts.Reconnect) * time.Second)
+		}
 	}
 
 	// Set up signals to close nicely on Control+C
@@ -159,7 +179,9 @@ func main() {
 		select {
 		case p := <-sreceive:
 			logger.Printf("S d:%02X p:%s\n", p.Dispatch(), p)
-			cconn.Send(p)
+			for i := range opts.Positional.Source {
+				ccons[i].Send(p)
+			}
 		case p := <-creceive:
 			logger.Printf("C d:%02X p:%s\n", p.Dispatch(), p)
 			sconn.Send(p)
@@ -167,7 +189,9 @@ func main() {
 			signal.Stop(signals)
 			logger.Printf("signal %s\n", sig)
 			sconn.Disconnect()
-			cconn.Disconnect()
+			for i := range opts.Positional.Source {
+				ccons[i].Disconnect()
+			}
 			interrupted = true
 		}
 	}
