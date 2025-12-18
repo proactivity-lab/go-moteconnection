@@ -10,7 +10,7 @@ else
 	BUILD_PARTS := build
 endif
 
-GOALS := amd64 arm5 arm6 arm7 arm64 clean
+GOALS := amd64 arm5 arm6 arm7 arm64
 ifeq (,$(filter $(GOALS),$(MAKECMDGOALS)))
   $(error Build with make amd64/arm5/arm6/arm7/arm64)
 endif

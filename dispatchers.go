@@ -14,22 +14,9 @@ type PacketDispatcher struct {
 	receiver chan Packet
 }
 
-type MessageDispatcherMessage interface {
-	Packet
-	Type() AMID;
-	NewPacket() Packet;
-}
-
 // MessageDispatcher structure
 type MessageDispatcher struct {
-	factory   MessageDispatcherMessage
-	receivers map[AMID]chan Packet
-	snooper   chan Packet
-}
-
-// MessageDispatcher structure
-type MistMessageDispatcher struct {
-	factory   MessageDispatcherMessage
+	factory   *Message
 	receivers map[AMID]chan Packet
 	snooper   chan Packet
 }
@@ -58,7 +45,7 @@ func (pd *PacketDispatcher) Receive(msg []byte) error {
 
 // Receive distributes a packet to receivers and snoopers
 func (md *MessageDispatcher) Receive(msg []byte) error {
-	p := md.factory.NewPacket().(MessageDispatcherMessage)
+	p := md.factory.NewPacket().(*Message)
 	err := p.Deserialize(msg)
 	if err == nil {
 	DeliverReceiver:
@@ -93,11 +80,6 @@ func (md *MessageDispatcher) Dispatch() byte {
 	return md.factory.Dispatch()
 }
 
-// Dispatch returns the dispatch ID of the dispatcher instance
-func (md *MistMessageDispatcher) Dispatch() byte {
-	return md.factory.Dispatch()
-}
-
 // NewPacket initializes a new packet for use with this dispatcher
 func (pd *PacketDispatcher) NewPacket() Packet {
 	return pd.factory.NewPacket()
@@ -105,11 +87,6 @@ func (pd *PacketDispatcher) NewPacket() Packet {
 
 // NewPacket initializes a new packet for use with this dispatcher
 func (md *MessageDispatcher) NewPacket() Packet {
-	return md.factory.NewPacket()
-}
-
-// NewPacket initializes a new packet for use with this dispatcher
-func (md *MistMessageDispatcher) NewPacket() Packet {
 	return md.factory.NewPacket()
 }
 
@@ -150,7 +127,7 @@ func NewPacketDispatcher(packetfactory PacketFactory) *PacketDispatcher {
 }
 
 // NewMessageDispatcher creates a new dispatcher
-func NewMessageDispatcher(packetfactory MessageDispatcherMessage) *MessageDispatcher {
+func NewMessageDispatcher(packetfactory *Message) *MessageDispatcher {
 	d := new(MessageDispatcher)
 	d.factory = packetfactory
 	d.receivers = make(map[AMID]chan Packet)

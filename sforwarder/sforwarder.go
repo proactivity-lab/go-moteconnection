@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/raidoz/go-moteconnection"
+	"github.com/proactivity-lab/go-moteconnection"
 )
 
 // ApplicationVersionMajor -
@@ -28,7 +28,7 @@ const ApplicationVersionMajor = 0
 const ApplicationVersionMinor = 0
 
 // ApplicationVersionPatch -
-const ApplicationVersionPatch = 2
+const ApplicationVersionPatch = 1
 
 // ApplicationBuildDate -
 var ApplicationBuildDate string
