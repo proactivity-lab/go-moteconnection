@@ -14,7 +14,7 @@ import (
 	"os/signal"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/proactivity-lab/go-moteconnection"
+	"github.com/raidoz/go-moteconnection"
 )
 
 // ApplicationVersionMajor -

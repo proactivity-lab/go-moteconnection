@@ -87,7 +87,7 @@ func (bmc *BaseMoteConnection) Send(msg Packet) error {
 	case bmc.outgoing <- serialized:
 		return nil
 	case <-time.After(50 * time.Millisecond): // Because the run goroutine might be doing something other than reading bmc.outgoing at this very moment
-		return errors.New("Not connected")
+		return errors.New("not connected")
 	}
 }
 

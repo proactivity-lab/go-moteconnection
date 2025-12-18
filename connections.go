@@ -7,8 +7,11 @@ package moteconnection
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // CreateConnection - create a connection based on the format string
@@ -29,7 +32,7 @@ func CreateConnection(connectionstring string) (MoteConnection, string, error) {
 			return NewSfConnection(host, 9002), fmt.Sprintf("sf@%s:%d", host, uint16(9002)), nil
 		}
 
-		re = regexp.MustCompile("serial@([a-zA-Z0-9.-/]+)(:([0-9]+))?\\z")
+		re = regexp.MustCompile("serial@([a-zA-Z0-9._/-]+)(:([0-9]+))?\\z")
 		match = re.FindStringSubmatch(connectionstring) // [serial@/dev/ttyUSB0:115200 /dev/ttyUSB0 :115200 115200]
 		//fmt.Printf("%s\n", match)l
 		if len(match) == 4 {
@@ -59,6 +62,20 @@ func CreateConnection(connectionstring string) (MoteConnection, string, error) {
 			}
 			c := NewUDPConnection(host, 9002)
 			return c, fmt.Sprintf("udp@%s:%d", host, uint16(9002)), nil
+		}
+
+		re = regexp.MustCompile("amqp.*")
+		match = re.FindStringSubmatch(connectionstring) // [udp@localhost:9002 localhost :9002 9002]
+		//fmt.Printf("%s\n", match)
+		if len(match) > 0 {
+			u, err := url.Parse(connectionstring)
+			if err == nil {
+				host, sport, _ := net.SplitHostPort(u.Host)
+				port, _ := strconv.Atoi(sport)
+				password, _ := u.User.Password()
+				c := NewMistCloudConnection(connectionstring)
+				return c, fmt.Sprintf("%s://%s:%s@%s:%d", u.Scheme, u.User.Username(), strings.Repeat("*", len(password)), host, port), nil
+			}
 		}
 
 		return nil, "", fmt.Errorf("ERROR: %s cannot be used as a connectionstring", connectionstring)

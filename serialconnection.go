@@ -105,10 +105,9 @@ func (self *SerialConnection) connect(delay time.Duration) error {
 	mode := &serial.Mode{BaudRate: self.Baud, Parity: serial.EvenParity, DataBits: 8, StopBits: serial.OneStopBit}
 
 	port, err := serial.Open(self.Port, mode)
-
-	port.SetDTR(false)
-
 	if err == nil {
+		port.SetDTR(false)
+
 		self.notifyWatchdog(true)
 		self.connected.Store(true)
 

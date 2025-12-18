@@ -24,6 +24,9 @@ type AMID uint8
 // AMGroup a group ID that should be represented as %02X
 type AMGroup uint8
 
+// EUI64 address %016X
+type EUI64 uint64
+
 func (hxb HexByte) String() string {
 	return fmt.Sprintf("%02X", byte(hxb))
 }
@@ -102,4 +105,20 @@ func (grp *AMGroup) UnmarshalFlag(value string) error {
 // MarshalFlag marshals AMGroup for the flags library
 func (grp AMGroup) MarshalFlag() (string, error) {
 	return grp.String(), nil
+}
+
+func (eui64 EUI64) String() string {
+	return fmt.Sprintf("%016X", uint64(eui64))
+}
+
+// UnmarshalFlag unmarshals EUI64 for the flags library
+func (eui64 *EUI64) UnmarshalFlag(value string) error {
+	data, err := strconv.ParseUint(value, 16, 64)
+	*eui64 = EUI64(data)
+	return err
+}
+
+// MarshalFlag marshals EUI64 for the flags library
+func (eui64 EUI64) MarshalFlag() (string, error) {
+	return eui64.String(), nil
 }
