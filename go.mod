@@ -1,4 +1,4 @@
-module github.com/proactivity-lab/go-moteconnection
+module github.com/raidoz/go-moteconnection
 
 go 1.17
 

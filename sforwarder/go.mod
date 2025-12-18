@@ -1,10 +1,10 @@
-module github.com/proactivity-lab/go-moteconnection/sforwarder
+module github.com/raidoz/go-moteconnection/sforwarder
 
 go 1.17
 
 require (
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/proactivity-lab/go-moteconnection v0.0.0
+	github.com/raidoz/go-moteconnection v0.0.3-0.20251218193010-8e586f994f83
 )
 
 require (
@@ -19,4 +19,4 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 )
 
-replace github.com/proactivity-lab/go-moteconnection => ../
+replace github.com/raidoz/go-moteconnection => ../
